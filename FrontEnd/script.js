@@ -1,0 +1,281 @@
+//gestion connexion
+function handleLoginStatus() {
+    const loginLink = document.querySelector('nav ul li a[href="connexion.html"]');
+    const token = localStorage.getItem("token");
+
+    if (token && loginLink) {
+        loginLink.textContent = "logout";
+        loginLink.href = "#"; 
+
+        loginLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.removeItem("token");
+            window.location.reload(); 
+        });
+    }
+}
+
+handleLoginStatus();
+
+async function getProjects() {
+    const response = await fetch("http://localhost:5678/api/works");
+    const projects = await response.json();
+    console.log(projects);
+
+    const categories = await getCategories();
+
+    addGallery(projects);
+    categoriesFilter(categories, projects)
+}
+
+getProjects();
+
+function addGallery(projects) {
+    const gallery = document.querySelector(".gallery");
+    gallery.innerHTML = "";
+
+    for (let i = 0; i < projects.length; i++) {
+        const project = projects[i]
+
+        const figure = document.createElement("figure");
+        const img = document.createElement("img")
+
+        img.src = project.imageUrl;
+        img.alt = project.title;
+
+        const figcaption = document.createElement("figcaption")
+        figcaption.innerHTML = project.title;
+
+        figure.appendChild(img);
+        figure.appendChild(figcaption);
+        gallery.appendChild(figure);
+    }
+}
+
+async function getCategories() {
+    const response = await fetch("http://localhost:5678/api/categories");
+    const categories = await response.json();
+    console.log(categories);
+    return categories;
+}
+
+getCategories();
+
+function categoriesFilter(categories, projects) {
+    const portfolio = document.querySelector("#portfolio");
+    const gallery = document.querySelector(".gallery");
+
+    const filter = document.createElement("div");
+    filter.classList.add("filter");
+    portfolio.insertBefore(filter, gallery);
+
+    const allCategories = [{ id: 0, name: "Tous" }, ...categories];
+
+    allCategories.forEach(category => {
+        const button = document.createElement("button");
+        button.innerText = category.name;
+        button.addEventListener("click", () => {
+            let filteredCategory;
+            if (category.id === 0) {
+                projects
+                filteredCategory = projects
+            } else {
+                filteredCategory = projects.filter(project => project.categoryId === category.id)
+            }
+
+            addGallery(filteredCategory);
+        });
+
+
+        filter.appendChild(button);
+    });
+
+    const token = localStorage.getItem("token");
+    if (token) {
+        filter.style.display = "none";
+    }
+
+    const title = document.querySelector(".portfolio-title");
+    if (title) {
+        title.classList.add("mb-portfolio");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+        document.querySelector(".edit-btn").style.display = "flex";
+    }
+})
+
+//modal
+const modal = document.getElementById("modal");
+const editBtn = document.querySelector(".edit-btn");
+const closeModal = document.querySelector(".close-modal")
+
+editBtn.addEventListener("click", async function () {
+    const projects = await fetchProjects();
+    addModalGallery(projects);
+
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+
+})
+
+closeModal.addEventListener("click", function () {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+
+    addView.style.display = "none";
+    galleryView.style.display = "block";
+})
+
+
+async function deleteProject(id) {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`http://localhost:5678/api/works/${id}`, {
+        method: "DELETE",
+        headers: {
+            "Content-type": "application/json",
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    const updatedProjects = await fetchProjects();
+    addGallery(updatedProjects);
+    addModalGallery(updatedProjects);
+}
+
+function addModalGallery(projects) {
+    const modalGallery = document.querySelector(".modal-gallery");
+    modalGallery.innerHTML = ""
+
+    projects.forEach(project => {
+        const figure = document.createElement("figure");
+
+        const img = document.createElement("img");
+        img.src = project.imageUrl;
+        img.alt = project.title;
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        deleteBtn.addEventListener("click", async () => {
+            await deleteProject(project.id);
+        });
+
+        figure.appendChild(img);
+        figure.appendChild(deleteBtn);
+        modalGallery.appendChild(figure);
+    });
+}
+
+async function fetchProjects() {
+    const response = await fetch("http://localhost:5678/api/works");
+    return await response.json();
+}
+
+//ajout de photo
+const galleryView = document.getElementById("modal-gallery-view");
+const addView = document.getElementById("modal-add-view");
+
+const addPhotoBtn = document.querySelector(".btn-add-photo");
+const backBtn = document.querySelector(".btn-back");
+
+addPhotoBtn.addEventListener("click", function () {
+    galleryView.style.display = "none";
+    addView.style.display = "block";
+});
+
+backBtn.addEventListener("click", function () {
+    addView.style.display = "none";
+    galleryView.style.display = "block";
+});
+
+const titleInput = document.getElementById("form-title");
+const validateBtn = document.querySelector(".btn-validate");
+const addWorkForm = document.getElementById("add-work");
+
+//pour afficher l'image sélectionnée
+const fileInput = document.getElementById("file-upload");
+const imagePreview = document.getElementById("image-preview");
+
+fileInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = "block";
+
+
+            document.querySelector("#drop-zone label").style.display = "none";
+            document.querySelector("#drop-zone p").style.display = "none";
+        };
+        reader.readAsDataURL(file);
+    }
+    checkFormValidity();
+});
+
+const categorySelect = document.getElementById("form-category");
+
+function checkFormValidity() {
+    if (fileInput.files.length > 0 && titleInput.value && categorySelect.value) {
+        validateBtn.disabled = false;
+    } else {
+        validateBtn.disabled = true;
+    }
+}
+
+titleInput.addEventListener("input", checkFormValidity);
+categorySelect.addEventListener("change", checkFormValidity);
+
+
+async function selectCategories() {
+    const response = await fetch("http://localhost:5678/api/categories");
+    const categories = await response.json();
+
+    categories.forEach(category => {
+        const option = document.createElement("option");
+        option.value = category.id;
+        option.textContent = category.name;
+        categorySelect.appendChild(option);
+    });
+}
+
+selectCategories();
+
+addWorkForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const formData = new FormData();
+    formData.append("image", fileInput.files[0]);
+    formData.append("title", titleInput.value);
+    formData.append("category", categorySelect.value);
+
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:5678/api/works", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        },
+        body: formData
+
+    });
+
+    if (response.ok) {
+        addWorkForm.reset();
+        imagePreview.style.display = "none";
+        validateBtn.disabled = true;
+
+        addView.style.display = "none";
+        galleryView.style.display = "block";
+
+        const projects = await fetchProjects();
+
+        addGallery(projects);
+        addModalGallery(projects);
+    } else {
+        alert("Erreur lors de l'ajout du projet !");
+    }
+})
