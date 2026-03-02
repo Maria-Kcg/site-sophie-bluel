@@ -1,25 +1,21 @@
-//gestion connexion
-function handleLoginStatus() {
-    const loginLink = document.querySelector('nav ul li a[href="connexion.html"]');
-    const token = localStorage.getItem("token");
+//fonction pour récupérer le token
+function getToken() {
+    return localStorage.getItem("token");
+}
 
-    if (token && loginLink) {
-        loginLink.textContent = "logout";
-        loginLink.href = "#"; 
-
-        loginLink.addEventListener("click", (e) => {
-            e.preventDefault();
-            localStorage.removeItem("token");
-            window.location.reload(); 
-        });
+function authentToApi() {
+    return {
+        "Content-type": "application/json",
+        "Authorization": `Bearer ${getToken()}`
     }
 }
 
-handleLoginStatus();
+//bsae de l'url de l'api
+const url = "http://localhost:5678/api";
 
 //récupération des projets
 async function getProjects() {
-    const response = await fetch("http://localhost:5678/api/works");
+    const response = await fetch(`${url}/works`);
     const projects = await response.json();
 
     const categories = await getCategories();
@@ -56,12 +52,12 @@ function addGallery(projects) {
 
 //récupération des catégories
 async function getCategories() {
-    const response = await fetch("http://localhost:5678/api/categories");
+    const response = await fetch(`${url}/categories`);
     const categories = await response.json();
     return categories;
 }
 
-getCategories();
+//getCategories();
 
 
 //filtre des projets par catégories
@@ -94,8 +90,7 @@ function categoriesFilter(categories, projects) {
         filter.appendChild(button);
     });
 
-    const token = localStorage.getItem("token");
-    if (token) {
+    if (getToken()) {
         filter.style.display = "none";
     }
 
@@ -106,9 +101,7 @@ function categoriesFilter(categories, projects) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    const token = localStorage.getItem("token");
-
-    if (token) {
+    if (getToken()) {
         document.querySelector(".edit-btn").style.display = "flex";
     }
 })
@@ -137,13 +130,9 @@ closeModal.addEventListener("click", function () {
 
 //suppression dans la modale
 async function deleteProject(id) {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`http://localhost:5678/api/works/${id}`, {
+    const response = await fetch(`${url}/works/${id}`, {
         method: "DELETE",
-        headers: {
-            "Content-type": "application/json",
-            "Authorization": `Bearer ${token}`
-        }
+        headers: authentToApi()
     });
 
     const updatedProjects = await fetchProjects();
@@ -175,7 +164,7 @@ function addModalGallery(projects) {
 }
 
 async function fetchProjects() {
-    const response = await fetch("http://localhost:5678/api/works");
+    const response = await fetch(`${url}/works`);
     return await response.json();
 }
 
@@ -236,7 +225,7 @@ categorySelect.addEventListener("change", checkFormValidity);
 
 
 async function selectCategories() {
-    const response = await fetch("http://localhost:5678/api/categories");
+    const response = await fetch(`${url}/categories`);
     const categories = await response.json();
 
     categories.forEach(category => {
@@ -257,12 +246,9 @@ addWorkForm.addEventListener("submit", async function (event) {
     formData.append("title", titleInput.value);
     formData.append("category", categorySelect.value);
 
-    const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:5678/api/works", {
+    const response = await fetch(`${url}/works`, {
         method: "POST",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        },
+        headers: { "Authorization": `Bearer ${getToken()}` },
         body: formData
 
     });
@@ -283,3 +269,22 @@ addWorkForm.addEventListener("submit", async function (event) {
         alert("Erreur lors de l'ajout du projet !");
     }
 })
+
+
+//gestion connexion et deconnexion au niveau de la nav
+function handleLoginStatus() {
+    const loginLink = document.querySelector('nav ul li a[href="connexion.html"]');
+
+    if (getToken() && loginLink) {
+        loginLink.textContent = "logout";
+        loginLink.href = "#";
+
+        loginLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            window.location.reload();
+        });
+    }
+}
+
+handleLoginStatus();
