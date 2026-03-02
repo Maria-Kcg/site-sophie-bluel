@@ -1,4 +1,4 @@
-//fonction pour récupérer le token
+//fonction pour récupérer le token et le header 
 function getToken() {
     return localStorage.getItem("token");
 }
@@ -15,13 +15,21 @@ const url = "http://localhost:5678/api";
 
 //récupération des projets
 async function getProjects() {
-    const response = await fetch(`${url}/works`);
-    const projects = await response.json();
+    try {
+        const response = await fetch(`${url}/works`);
 
-    const categories = await getCategories();
+        if (!response.ok) {
+            throw new Error("Impossible de chager les projets")
+        }
+        const projects = await response.json();
 
-    addGallery(projects);
-    categoriesFilter(categories, projects)
+        const categories = await getCategories();
+
+        addGallery(projects);
+        categoriesFilter(categories, projects)
+    } catch (error) {
+        console.error(error)
+    }
 }
 
 getProjects();
@@ -52,9 +60,18 @@ function addGallery(projects) {
 
 //récupération des catégories
 async function getCategories() {
-    const response = await fetch(`${url}/categories`);
-    const categories = await response.json();
-    return categories;
+    try {
+        const response = await fetch(`${url}/categories`);
+
+        if (!response.ok) {
+            throw new Error("Impossible de charger les catégories")
+        }
+
+        const categories = await response.json();
+        return categories;
+    } catch (rerro) {
+        console.error(error)
+    }
 }
 
 //getCategories();
@@ -130,14 +147,23 @@ closeModal.addEventListener("click", function () {
 
 //suppression dans la modale
 async function deleteProject(id) {
-    const response = await fetch(`${url}/works/${id}`, {
-        method: "DELETE",
-        headers: authentToApi()
-    });
+    try {
+        const response = await fetch(`${url}/works/${id}`, {
+            method: "DELETE",
+            headers: authentToApi()
+        });
 
-    const updatedProjects = await fetchProjects();
-    addGallery(updatedProjects);
-    addModalGallery(updatedProjects);
+        if (response.ok) {
+            const updatedProjects = await fetchProjects();
+            addGallery(updatedProjects);
+            addModalGallery(updatedProjects);
+            alert("Projet supprimé!!")
+        } else {
+            throw new Error("Echec de la suppression")
+        }
+    } catch (error) {
+        console.error(error)
+    }
 }
 
 function addModalGallery(projects) {
@@ -164,8 +190,15 @@ function addModalGallery(projects) {
 }
 
 async function fetchProjects() {
-    const response = await fetch(`${url}/works`);
-    return await response.json();
+    try {
+        const response = await fetch(`${url}/works`);
+        if (!response.ok) {
+            throw new Error("imposible de recharder les projets")
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(error)
+    }
 }
 
 //ajout de photo
@@ -225,15 +258,25 @@ categorySelect.addEventListener("change", checkFormValidity);
 
 
 async function selectCategories() {
-    const response = await fetch(`${url}/categories`);
-    const categories = await response.json();
+    try {
+        const response = await fetch(`${url}/categories`);
 
-    categories.forEach(category => {
-        const option = document.createElement("option");
-        option.value = category.id;
-        option.textContent = category.name;
-        categorySelect.appendChild(option);
-    });
+        if (!response.ok) {
+            throw new Error("Impossible de charger les catégories");
+        }
+
+        const categories = await response.json();
+
+        categories.forEach(category => {
+            const option = document.createElement("option");
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error(error);
+    }
+
 }
 
 selectCategories();
@@ -246,28 +289,33 @@ addWorkForm.addEventListener("submit", async function (event) {
     formData.append("title", titleInput.value);
     formData.append("category", categorySelect.value);
 
-    const response = await fetch(`${url}/works`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${getToken()}` },
-        body: formData
+    try {
+        const response = await fetch(`${url}/works`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${getToken()}` },
+            body: formData
 
-    });
+        });
 
-    if (response.ok) {
-        addWorkForm.reset();
-        imagePreview.style.display = "none";
-        validateBtn.disabled = true;
+        if (response.ok) {
+            addWorkForm.reset();
+            imagePreview.style.display = "none";
+            validateBtn.disabled = true;
 
-        addView.style.display = "none";
-        galleryView.style.display = "block";
+            addView.style.display = "none";
+            galleryView.style.display = "block";
 
-        const projects = await fetchProjects();
+            const projects = await fetchProjects();
 
-        addGallery(projects);
-        addModalGallery(projects);
-    } else {
-        alert("Erreur lors de l'ajout du projet !");
+            addGallery(projects);
+            addModalGallery(projects);
+        } else {
+            alert("Erreur lors de l'ajout du projet !");
+        }
+    } catch (error) {
+        console.error(error)
     }
+
 })
 
 
