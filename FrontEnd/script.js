@@ -17,10 +17,10 @@ function handleLoginStatus() {
 
 handleLoginStatus();
 
+//récupération des projets
 async function getProjects() {
     const response = await fetch("http://localhost:5678/api/works");
     const projects = await response.json();
-    console.log(projects);
 
     const categories = await getCategories();
 
@@ -30,6 +30,8 @@ async function getProjects() {
 
 getProjects();
 
+
+//ajout des projets à l'écran
 function addGallery(projects) {
     const gallery = document.querySelector(".gallery");
     gallery.innerHTML = "";
@@ -52,15 +54,17 @@ function addGallery(projects) {
     }
 }
 
+//récupération des catégories
 async function getCategories() {
     const response = await fetch("http://localhost:5678/api/categories");
     const categories = await response.json();
-    console.log(categories);
     return categories;
 }
 
 getCategories();
 
+
+//filtre des projets par catégories
 function categoriesFilter(categories, projects) {
     const portfolio = document.querySelector("#portfolio");
     const gallery = document.querySelector(".gallery");
@@ -109,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 })
 
-//modal
+//modale: modification de la gallerie
 const modal = document.getElementById("modal");
 const editBtn = document.querySelector(".edit-btn");
 const closeModal = document.querySelector(".close-modal")
@@ -131,7 +135,7 @@ closeModal.addEventListener("click", function () {
     galleryView.style.display = "block";
 })
 
-
+//suppression dans la modale
 async function deleteProject(id) {
     const token = localStorage.getItem("token");
     const response = await fetch(`http://localhost:5678/api/works/${id}`, {
