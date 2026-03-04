@@ -1,80 +1,24 @@
-//fonction pour récupérer le token et le header 
-function getToken() {
-    return localStorage.getItem("token");
-}
-
-function authentToApi() {
-    return {
-        "Content-type": "application/json",
-        "Authorization": `Bearer ${getToken()}`
-    }
-}
-
-//bsae de l'url de l'api
+import { getCategories, fetchProjects, getToken, authentToApi } from "./api.js";
+import { addGallery } from "./gallery.js";
 const url = "http://localhost:5678/api";
 
 //récupération des projets
 async function getProjects() {
     try {
-        const response = await fetch(`${url}/works`);
-
-        if (!response.ok) {
-            throw new Error("Impossible de chager les projets")
-        }
-        const projects = await response.json();
+        const projects = await fetchProjects();
 
         const categories = await getCategories();
 
         addGallery(projects);
         categoriesFilter(categories, projects)
+
     } catch (error) {
-        console.error(error)
+        console.error(error);
+        alert("Impossible de chager les projets");
     }
 }
 
 getProjects();
-
-
-//ajout des projets à l'écran
-function addGallery(projects) {
-    const gallery = document.querySelector(".gallery");
-    gallery.innerHTML = "";
-
-    for (let i = 0; i < projects.length; i++) {
-        const project = projects[i]
-
-        const figure = document.createElement("figure");
-        const img = document.createElement("img")
-
-        img.src = project.imageUrl;
-        img.alt = project.title;
-
-        const figcaption = document.createElement("figcaption")
-        figcaption.innerHTML = project.title;
-
-        figure.appendChild(img);
-        figure.appendChild(figcaption);
-        gallery.appendChild(figure);
-    }
-}
-
-//récupération des catégories
-async function getCategories() {
-    try {
-        const response = await fetch(`${url}/categories`);
-
-        if (!response.ok) {
-            throw new Error("Impossible de charger les catégories")
-        }
-
-        const categories = await response.json();
-        return categories;
-    } catch (rerro) {
-        console.error(error)
-    }
-}
-
-//getCategories();
 
 
 //filtre des projets par catégories
@@ -123,6 +67,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 })
 
+
 //modale: modification de la gallerie
 const modal = document.getElementById("modal");
 const editBtn = document.querySelector(".edit-btn");
@@ -163,6 +108,7 @@ async function deleteProject(id) {
         }
     } catch (error) {
         console.error(error)
+        alert("Echec de la suppression")
     }
 }
 
@@ -187,18 +133,6 @@ function addModalGallery(projects) {
         figure.appendChild(deleteBtn);
         modalGallery.appendChild(figure);
     });
-}
-
-async function fetchProjects() {
-    try {
-        const response = await fetch(`${url}/works`);
-        if (!response.ok) {
-            throw new Error("imposible de recharder les projets")
-        }
-        return await response.json();
-    } catch (error) {
-        console.error(error)
-    }
 }
 
 //ajout de photo
@@ -259,13 +193,7 @@ categorySelect.addEventListener("change", checkFormValidity);
 
 async function selectCategories() {
     try {
-        const response = await fetch(`${url}/categories`);
-
-        if (!response.ok) {
-            throw new Error("Impossible de charger les catégories");
-        }
-
-        const categories = await response.json();
+        const categories = await getCategories();
 
         categories.forEach(category => {
             const option = document.createElement("option");
